@@ -1,0 +1,31 @@
+{
+  "name": "forex-trading-companion",
+  "version": "0.1.0",
+  "description": "A comprehensive dashboard for Forex traders, featuring session tracking, journaling, analytics, AI-powered insights, and community features. Helps traders stay organized, analyze performance, and make informed decisions.",
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"To run the app, open index.html in your browser. Ensure the API_KEY environment variable is accessible if running a local dev server that injects it, or that it's manually set if required by your setup.\" && exit 1",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "@google/genai": "^1.3.0",
+    "@reduxjs/toolkit": "^2.8.2",
+    "axios": "^1.7.2",
+    "dayjs": "^1.11.10",
+    "firebase": "^10.12.0",
+    "moment": "^2.30.1",
+    "moment-timezone": "^0.6.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-icons": "^5.5.0",
+    "react-redux": "^9.2.0",
+    "react-router-dom": "^7.6.1",
+    "recharts": "^2.15.3",
+    "redux": "^5.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

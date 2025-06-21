@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Forex Trade Companion</title>
+    <!-- Firebase SDKs will be loaded via importmap -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom scrollbar for a more integrated look with dark theme */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1f2937; /* gray-800 */
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #4b5563; /* gray-600 */
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #6b7280; /* gray-500 */
+      }
+      body {
+        font-family: 'Inter', sans-serif; /* A common modern sans-serif font */
+         background-color: #111827; /* gray-900 */
+         color: #f3f4f6; /* gray-100 */
+      }
+       /* For Firefox */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #4b5563 #1f2937;
+      }
+       /* Add a dot-flashing animation for loading indicators if needed elsewhere, 
+          but it's better to handle this with Tailwind's animation utilities or SVGs if possible.
+          The specific style jsx removed from ChatAssistant is not standard.
+          If a global animation is truly needed, it can be added here.
+       */
+    </style>
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react-redux": "https://esm.sh/react-redux@^9.2.0",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.3.0",
+    "moment": "https://esm.sh/moment@^2.30.1",
+    "dayjs": "https://esm.sh/dayjs@^1.11.10",
+    "dayjs/": "https://esm.sh/dayjs@^1.11.10/",
+    "@reduxjs/toolkit": "https://esm.sh/@reduxjs/toolkit@^2.8.2",
+    "moment-timezone": "https://esm.sh/moment-timezone@^0.6.0",
+    "react-icons/": "https://esm.sh/react-icons@^5.5.0/",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.6.1",
+    "recharts": "https://esm.sh/recharts@^2.15.3",
+    "redux": "https://esm.sh/redux@^5.0.1",
+    "firebase/app": "https://esm.sh/firebase@10.12.0/app",
+    "firebase/auth": "https://esm.sh/firebase@10.12.0/auth",
+    "firebase/firestore": "https://esm.sh/firebase@10.12.0/firestore",
+    "firebase/": "https://esm.sh/firebase@^11.9.1/",
+    "axios": "https://esm.sh/axios@^1.7.2",
+    "cors": "https://esm.sh/cors@^2.8.5",
+    "firebase-functions": "https://esm.sh/firebase-functions@^6.3.2"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
