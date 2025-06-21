@@ -1,19 +1,14 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "NodeNext",
+    "esModuleInterop": true,
+    "moduleResolution": "nodenext",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
     "sourceMap": true,
     "strict": true,
-    "target": "es2021",
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "baseUrl": "./src", // Allows imports relative to src
-    "paths": {
-      "@/*": ["*"] // Example path alias if you want to use @/ for imports from src
-    }
+    "target": "es2017"
   },
   "compileOnSave": true,
   "include": [

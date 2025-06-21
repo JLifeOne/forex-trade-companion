@@ -1,0 +1,24 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Allow users to read/write only their own profile document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Add more collections here (e.g., journal, signals) if needed:
+    match /signals/{signalId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /journal/{entryId} {
+      allow read, write: if request.auth != null && request.auth.uid != null;
+    }
+
+    // Deny everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.json",
+
+  "compilerOptions": {
+    /* Better type-safety */
+    "strict": true,
+
+    /* Warn if file-name casing clashes on different OSes */
+    "forceConsistentCasingInFileNames": true,
+
+    /* Enable source maps for debugging */
+    "sourceMap": true,
+
+    /* Enable incremental compilation */
+    "incremental": true,
+
+    /* Enable isolated modules for better compatibility */
+    "isolatedModules": true
+  },
+
+  "include": [
+    ".eslintrc.js"
+  ],
+
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
