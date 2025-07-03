@@ -45,7 +45,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onDateSelect, selectedJourn
     const days = [];
     const startDate = currentMonth.clone().startOf('month').startOf('week');
     const endDate = currentMonth.clone().endOf('month').endOf('week');
-    let day = startDate.clone();
+    const day = startDate.clone();
 
     while (day.isSameOrBefore(endDate, 'day')) {
       days.push(day.clone());

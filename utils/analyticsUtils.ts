@@ -1,6 +1,6 @@
 
 import moment from 'moment';
-import { JournalEntry, Trade } from '../types';
+import { JournalEntry } from '../types';
 
 interface DailyWinRate {
   day: string; // 'Mon', 'Tue', etc.

@@ -31,11 +31,11 @@ const NewsFeedComponent: React.FC = () => {
       if (fetchedEvents.some(e => e.id.startsWith('mock-static-'))) {
         setIsUsingStaticFallback(true);
       }
-    } catch (err: any) { 
+    } catch (err: unknown) { 
       // This catch block is now for truly unexpected errors if fetchForexFactoryNews itself fails catastrophically
       // before its own internal error handling can return mock data.
       console.error("NewsFeed.tsx: Critical error from fetchForexFactoryNews service:", err);
-      setError(err.message || "A critical error occurred while loading news.");
+      setError((err as Error).message || "A critical error occurred while loading news.");
       setAllEvents([]); 
     } finally {
       setLoading(false);

@@ -7,7 +7,7 @@ import { FaCloud, FaCloudUploadAlt, FaCheckCircle, FaExclamationCircle } from 'r
 const SyncIndicator: React.FC = () => {
   const authStatus = useSelector((state: RootState) => state.auth.status);
   const isSyncing = useSelector((state: RootState) => state.auth.syncing);
-  const cloudSyncEnabled = useSelector((state: RootState) => getAppSettings().cloudSync); // Assuming settings are in Redux or accessible
+  const cloudSyncEnabled = useSelector(() => getAppSettings().cloudSync); // Assuming settings are in Redux or accessible
 
   // Helper function to get settings, ideally from Redux or context, fallback to localStorage
   function getAppSettings() { 

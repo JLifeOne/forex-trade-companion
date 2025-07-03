@@ -19,8 +19,8 @@ export const fetchSentimentForSymbol = createAsyncThunk<
     try {
       const sentiment = await getAISymbolSentiment(item.symbol);
       return { id: symbolId, sentiment };
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch sentiment');
+    } catch (error: unknown) {
+      return rejectWithValue((error as Error).message || 'Failed to fetch sentiment');
     }
   }
 );

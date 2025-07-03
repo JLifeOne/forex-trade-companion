@@ -5,7 +5,7 @@ import { NewsEvent } from '../types';
 
 dayjs.extend(utc); // Extend dayjs with the UTC plugin
 
-const FF_CALENDAR_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json";
+const FF_CALENDAR_URL = "/api/forexFactoryNews";
 
 interface RawNewsEvent {
   title: string;
@@ -106,7 +106,7 @@ export const fetchForexFactoryNews = async (): Promise<NewsEvent[]> => {
     console.info("[ForexFactoryService] Successfully fetched and cached live news.");
     return sortedEvents;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorTimestamp = dayjs().format('YYYY-MM-DDTHH:mm:ssZ');
     const logMessagePrefix = `[ForexFactoryService][${errorTimestamp}]`;
     let detailedLogMessage = `${logMessagePrefix} Attempt to fetch live news from ${FF_CALENDAR_URL} failed. `;
@@ -119,7 +119,10 @@ export const fetchForexFactoryNews = async (): Promise<NewsEvent[]> => {
              detailedLogMessage += "This is often due to client-side cross-origin restrictions (CORS) or general internet connectivity issues. The external server may not be configured to allow requests from this application's domain. ";
         }
     } else {
-        detailedLogMessage += `Non-Axios Error: Message: "${error.message || 'Unknown fetch error'}". `;
+        const errorMessage = (typeof error === 'object' && error !== null && 'message' in error)
+            ? (error as { message?: string }).message
+            : undefined;
+        detailedLogMessage += `Non-Axios Error: Message: "${errorMessage || 'Unknown fetch error'}". `;
     }
 
     if (newsCache.data && newsCache.data.length > 0) {

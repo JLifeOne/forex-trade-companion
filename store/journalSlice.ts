@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { JournalState, JournalEntry, JournalSaveLogEntry, AISignal, User } from '../types';
-import { db, auth } from '../services/firebase'; // Firestore instance
+import { JournalState, JournalEntry, JournalSaveLogEntry, AISignal } from '../types';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore'; // For compat types if needed, but direct v9 is better
 import moment from 'moment';
@@ -41,9 +40,9 @@ export const subscribeToJournalEntries = createAsyncThunk<
         }
       );
       return unsubscribe; // This is the function to call to stop listening
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Failed to initiate journal subscription:", error);
-        return rejectWithValue(error.message || "Failed to subscribe to journal.");
+        return rejectWithValue((error as Error).message || "Failed to subscribe to journal.");
     }
   }
 );
@@ -75,10 +74,10 @@ export const saveJournalEntryToFirestore = createAsyncThunk<
       dispatch(journalSlice.actions.addJournalSaveLog(logEntry));
       dispatch(addToast({message: `Journal for ${moment(date).format('MMM D')} saved.`, type: 'success'}));
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving journal entry to Firestore:", error);
-      dispatch(addToast({ message: `Failed to save journal: ${error.message}`, type: 'error'}));
-      return rejectWithValue(error.message || "Failed to save journal entry.");
+      dispatch(addToast({ message: `Failed to save journal: ${(error as Error).message}`, type: 'error'}));
+      return rejectWithValue((error as Error).message || "Failed to save journal entry.");
     }
   }
 );
@@ -100,10 +99,10 @@ export const deleteJournalEntryFromFirestore = createAsyncThunk<
       await entryRef.delete();
       // Snapshot listener will update state.
       dispatch(addToast({message: `Journal entry for ${moment(date).format('MMM D')} deleted.`, type: 'info'}));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting journal entry from Firestore:", error);
-      dispatch(addToast({ message: `Failed to delete journal: ${error.message}`, type: 'error'}));
-      return rejectWithValue(error.message || "Failed to delete journal entry.");
+      dispatch(addToast({ message: `Failed to delete journal: ${(error as Error).message}`, type: 'error'}));
+      return rejectWithValue((error as Error).message || "Failed to delete journal entry.");
     }
   }
 );
@@ -127,8 +126,8 @@ const journalSlice = createSlice({
         state.saveLog = [];
     },
     // Keep logAISignalToJournal but adapt it to save to Firestore
-    logAISignalToJournal(state, action: PayloadAction<{ date: string; signal: AISignal; userId: string }>) {
-        const { date, signal, userId } = action.payload; // Assuming userId is passed or accessible
+    logAISignalToJournal(state, action: PayloadAction<{ date: string; signal: AISignal }>) {
+        const { date, signal } = action.payload; // Assuming userId is passed or accessible
         const existingEntry = state.entries[date] || { mindset: '', strategy: '', trades: [] };
         
         const signalDetails = `AI Signal Applied: ${signal.title} (${signal.pair || 'N/A'})
@@ -183,18 +182,18 @@ Indicators: ${signal.supportingIndicators || 'N/A'}
   },
   extraReducers: (builder) => {
     builder
-        .addCase(saveJournalEntryToFirestore.pending, (state, action) => {
+        .addCase(saveJournalEntryToFirestore.pending, () => {
             // Can add specific loading state for saving an entry if needed
         })
-        .addCase(saveJournalEntryToFirestore.rejected, (state, action) => {
+        .addCase(saveJournalEntryToFirestore.rejected, () => {
             // state.error = action.payload; // Or use a specific error field
             // Revert optimistic update if necessary, or let onSnapshot handle it.
         })
-        .addCase(subscribeToJournalEntries.rejected, (state, action) => {
+        .addCase(subscribeToJournalEntries.rejected, (state) => {
             // state.error = action.payload;
              state.entries = {}; // Clear entries if subscription fails
         })
-        .addCase(deleteJournalEntryFromFirestore.rejected, (state,action) => {
+        .addCase(deleteJournalEntryFromFirestore.rejected, () => {
             // state.error = action.payload;
         });
   }

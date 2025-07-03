@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaLightbulb, FaSync, FaExclamationCircle, FaCog, FaBullseye, FaSignInAlt, FaSignOutAlt, FaFileAlt, FaChartLine, FaExclamationTriangle } from 'react-icons/fa';
+import { FaLightbulb, FaSync, FaExclamationCircle, FaBullseye, FaFileAlt, FaChartLine, FaExclamationTriangle } from 'react-icons/fa';
 import { generateStrategyIdea } from '../services/geminiService';
 import { StrategyIdea, NewsEvent } from '../types';
 import { TRADING_STYLES } from '../constants';
@@ -49,7 +49,7 @@ const AIStrategySpotlight: React.FC = () => {
     try {
       const result = await generateStrategyIdea(style);
       setStrategy(result);
-    } catch (e: any) {
+    } catch (e: unknown) {
       setError("Failed to generate strategy idea.");
       console.error("Strategy generation error:", e);
     } finally {
@@ -127,9 +127,9 @@ const AIStrategySpotlight: React.FC = () => {
           
           <p className="text-sm text-gray-200 mb-3">{strategy.description}</p>
 
-          <DetailSection icon={<FaSignInAlt/>} title="Entry Conditions" content={strategy.entryConditions} />
-          <DetailSection icon={<FaSignOutAlt/>} title="Exit Conditions" content={strategy.exitConditions} />
-          <DetailSection icon={<FaCog/>} title="Core Logic" content={strategy.coreLogic} />
+          <DetailSection icon={<FaBullseye/>} title="Entry Conditions" content={strategy.entryConditions} />
+          <DetailSection icon={<FaChartLine/>} title="Exit Conditions" content={strategy.exitConditions} />
+          <DetailSection icon={<FaFileAlt/>} title="Core Logic" content={strategy.coreLogic} />
         </div>
       )}
       {!isLoading && !error && !strategy && (

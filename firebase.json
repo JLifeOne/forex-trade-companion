@@ -1,35 +1,53 @@
 {
-  "firestore": {
-    "database": "(default)",
-    "location": "us-central1",
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
   "functions": [
     {
       "source": "functions",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "*.local"
-      ],
-      "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" run lint",
-        "npm --prefix \"$RESOURCE_DIR\" run build"
-      ]
+      "runtime": "nodejs18",
+      "codebase": "default"
     }
   ],
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
   "hosting": {
-    "public": "dist",
+    "site": "forex-trade-companion",
+    "public": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "functions/**"
     ],
     "rewrites": [
+      {
+        "source": "/api/gemini/sentiment",
+        "function": "sentiment"
+      },
+      {
+        "source": "/api/gemini/chat",
+        "function": "chat"
+      },
+      {
+        "source": "/api/gemini/signals",
+        "function": "signals"
+      },
+      {
+        "source": "/api/gemini/strategy-idea",
+        "function": "strategyIdea"
+      },
+      {
+        "source": "/api/gemini/market-commentary",
+        "function": "marketCommentary"
+      },
+      {
+        "source": "/api/gemini/journal-review",
+        "function": "journalReview"
+      },
+      {
+        "source": "/api/gemini/symbol-sentiment",
+        "function": "symbolSentiment"
+      },
       {
         "source": "**",
         "destination": "/index.html"

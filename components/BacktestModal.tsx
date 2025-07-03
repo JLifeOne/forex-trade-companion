@@ -17,7 +17,7 @@ interface BacktestResults {
 }
 
 // Mock backtester function
-const runMockBacktest = (strategyId: string): Promise<BacktestResults> => {
+const runMockBacktest = (): Promise<BacktestResults> => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({

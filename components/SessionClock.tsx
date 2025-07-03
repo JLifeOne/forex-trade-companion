@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import moment from 'moment-timezone';
 import { RootState } from '../store/rootReducer';
 import { FOREX_SESSIONS } from '../constants';
-import { FaClock, FaGlobeAmericas, FaRegClock } from 'react-icons/fa';
+import { FaClock, FaGlobeAmericas } from 'react-icons/fa';
 
 const SessionClock: React.FC = () => {
   const { localTime, timezones, sessionStatus } = useSelector((state: RootState) => state.session);
@@ -29,13 +29,13 @@ const SessionClock: React.FC = () => {
           Session Tracker
         </h2>
         <div className="flex items-center text-lg font-mono text-gray-300 bg-gray-700 px-3 py-1 rounded-md shadow-sm">
-           <span className="mr-2 text-indigo-400"><FaRegClock /></span> {localTime} (Local)
+           <span className="mr-2 text-indigo-400"><FaClock /></span> {localTime} (Local)
         </div>
       </div>
       
       <div className="space-y-3">
         {FOREX_SESSIONS.map((session) => {
-          const sessionCurrentTime = moment().tz(session.timezone).format('HH:mm');
+          const sessionCurrentTime = timezones[session.timezone] || '--:--';
           const status = sessionStatus[session.name];
           const openLocal = moment.utc().hour(session.utcOpen).minute(0).tz(moment.tz.guess()).format('HH:mm');
           const closeLocal = moment.utc().hour(session.utcClose).minute(0).tz(moment.tz.guess()).format('HH:mm');

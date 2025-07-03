@@ -1,5 +1,5 @@
 
-import { ForexSession, ChecklistItem, Strategy, NewsEvent } from './types'; // Strategy is now directly imported
+import { ForexSession, ChecklistItem, Strategy } from './types'; // Strategy is now directly imported
 
 export const FOREX_SESSIONS: ForexSession[] = [
   { name: 'Tokyo', utcOpen: 0, utcClose: 9, timezone: 'Asia/Tokyo' }, // 00:00 - 09:00 UTC

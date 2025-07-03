@@ -3,7 +3,6 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../store';
 import { loginWithFirebase, signupWithFirebase } from '../store/authSlice';
 import { addToast } from '../store/toastSlice';
-import { User } from '../types';
 import { FaTimes, FaSignInAlt, FaEnvelope, FaLock, FaUserPlus, FaUndo } from 'react-icons/fa';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth'; // Ensure auth compat features are loaded
@@ -112,7 +111,7 @@ const AuthModalComponent: React.FC<AuthModalProps> = ({ visible, onClose }) => {
       await auth.sendPasswordResetEmail(email);
       dispatch(addToast({ message: `If an account exists for ${email}, a password reset link has been sent. Check your inbox (and spam folder).`, type: 'info', duration: 7000 }));
       setMode('login'); // Switch back to login after initiating
-    } catch (error: any) {
+    } catch (error: unknown) {
       const authError = error as firebase.auth.AuthError;
       console.error("Password reset error:", authError);
       let errorMessage = 'Failed to send password reset email. Please try again.';

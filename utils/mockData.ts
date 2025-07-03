@@ -1,5 +1,5 @@
 
-import { NewsEvent, VolatilityScore, AISignal } from '../types';
+import { VolatilityScore, AISignal } from '../types';
 // import { FOREX_SESSIONS, MOCK_NEWS_EVENTS as CONST_MOCK_NEWS_EVENTS } from '../constants'; // CONST_MOCK_NEWS_EVENTS is from constants.ts
 
 // MOCK_NEWS_EVENTS is no longer directly used by NewsFeed.tsx. 
@@ -19,7 +19,6 @@ export interface VolatilityTrend extends VolatilityScore {
 export const getMockVolatilityTrends = (): Record<'Tokyo' | 'London' | 'NewYork', VolatilityTrend> => {
   const generateTrend = (): VolatilityTrendPoint[] => {
     const points: VolatilityTrendPoint[] = [];
-    const now = Date.now();
     for (let i = 4; i >= 0; i--) { // 5 points: T-4h, T-3h, T-2h, T-1h, Now
       points.push({
         time: i === 0 ? "Now" : `T-${i}h`,

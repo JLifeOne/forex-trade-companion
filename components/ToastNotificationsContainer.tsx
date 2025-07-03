@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store/rootReducer';
-import { removeToast, addToast } from '../store/toastSlice';
+import { removeToast } from '../store/toastSlice';
 import { ToastMessage } from '../types';
 import { FaCheckCircle, FaExclamationCircle, FaInfoCircle, FaTimes } from 'react-icons/fa';
 

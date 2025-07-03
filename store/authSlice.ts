@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { AuthState, User } from '../types';
-import { auth, db } from '../services/firebase'; // Firebase auth instance (now v9 compat)
+import { auth } from '../services/firebase'; // Firebase auth instance (now v9 compat)
 import firebase from 'firebase/compat/app'; // Required for compat types like firebase.User
 import 'firebase/compat/auth'; // Ensure auth compat is loaded for types
 import { AppDispatch, RootState } from './index'; // For thunk dispatch typing
@@ -38,7 +38,7 @@ export const loginWithFirebase = createAsyncThunk<
       const user = mapFirebaseUserToUser(userCredential.user);
       // Firebase manages its own token. We can use a placeholder or remove it.
       return { user, token: 'firebase_managed_token' }; 
-    } catch (error: any) {
+    } catch (error: unknown) {
       const authError = error as FirebaseAuthError;
       return rejectWithValue(authError.message || authError.code || 'Login failed');
     }
@@ -69,7 +69,7 @@ export const signupWithFirebase = createAsyncThunk<
       
       const user = mapFirebaseUserToUser(userCredential.user);
       return { user, token: 'firebase_managed_token' };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const authError = error as FirebaseAuthError;
       return rejectWithValue(authError.message || authError.code || 'Signup failed');
     }
@@ -92,7 +92,7 @@ export const logoutFromFirebase = createAsyncThunk<
         journalListenerUnsubscribe = null;
       }
       dispatch(clearJournalData()); // Clear journal data from Redux store
-    } catch (error: any) {
+    } catch (error: unknown) {
       const authError = error as FirebaseAuthError;
       return rejectWithValue(authError.message || authError.code || 'Logout failed');
     }
@@ -104,7 +104,7 @@ export const initializeAuthListener = createAsyncThunk<void, void, { dispatch: A
   async (_, { dispatch }) => {
     dispatch(authActions.authInitializing()); 
     return new Promise<void>((resolve, reject) => { 
-      const unsubscribe = auth.onAuthStateChanged(
+      auth.onAuthStateChanged(
         async (firebaseUser: FirebaseUserType | null) => { 
           if (firebaseUser) {
             const user = mapFirebaseUserToUser(firebaseUser);
@@ -115,10 +115,10 @@ export const initializeAuthListener = createAsyncThunk<void, void, { dispatch: A
               journalListenerUnsubscribe();
             }
             // Subscribe to journal entries for the new user
-            const unsubscribeJournal = await dispatch(subscribeToJournalEntries(user.uid));
+            const unsubscribeJournal: { meta?: { requestStatus?: string } } = await dispatch(subscribeToJournalEntries(user.uid));
             if (typeof unsubscribeJournal === 'function') { // Check if it's the actual unsubscribe function
                  journalListenerUnsubscribe = unsubscribeJournal as JournalUnsubscribeFunction;
-            } else if ((unsubscribeJournal as any).meta?.requestStatus === 'rejected') {
+            } else if (unsubscribeJournal.meta?.requestStatus === 'rejected') {
                  console.error("Failed to subscribe to journal entries after login.");
                  dispatch(addToast({message: "Error syncing journal data. Please try refreshing.", type: "error"}));
             }
@@ -193,7 +193,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(loginWithFirebase.fulfilled, (state, action) => {
+      .addCase(loginWithFirebase.fulfilled, () => {
         // Handled by onAuthStateChanged via authSuccess
       })
       .addCase(loginWithFirebase.rejected, (state, action) => {
@@ -202,7 +202,7 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
       })
-      .addCase(signupWithFirebase.fulfilled, (state, action) => {
+      .addCase(signupWithFirebase.fulfilled, () => {
         // Handled by onAuthStateChanged via authSuccess
       })
       .addCase(signupWithFirebase.rejected, (state, action) => {
@@ -211,7 +211,7 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
       })
-      .addCase(logoutFromFirebase.fulfilled, (state) => {
+      .addCase(logoutFromFirebase.fulfilled, () => {
         // Handled by onAuthStateChanged via authLogout
       })
       .addCase(logoutFromFirebase.rejected, (state, action) => {
@@ -222,10 +222,10 @@ const authSlice = createSlice({
         state.user = null; 
         state.token = null;
       })
-      .addCase(initializeAuthListener.pending, (state) => {
+      .addCase(initializeAuthListener.pending, () => {
         // authInitializing action already dispatched by the thunk itself
       })
-      .addCase(initializeAuthListener.fulfilled, (state) => {
+      .addCase(initializeAuthListener.fulfilled, () => {
         // Actual state changes (authSuccess/authLogout) are dispatched within onAuthStateChanged
         // No direct state change here, status is managed by onAuthStateChanged callbacks.
       })

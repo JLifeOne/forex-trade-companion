@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatMessage } from '../types';
 import { queryChatAssistant } from '../services/geminiService';
-import { FaPaperPlane, FaTimes, FaRobot, FaCommentDots, FaWindowMinimize, FaRegWindowClose } from 'react-icons/fa'; // Added FaCommentDots, FaWindowMinimize
+import { FaPaperPlane, FaRobot, FaCommentDots, FaWindowMinimize, FaRegWindowClose } from 'react-icons/fa'; // Added FaCommentDots, FaWindowMinimize
 
 type ChatWidgetDisplayMode = 'hidden' | 'collapsed' | 'expanded';
 

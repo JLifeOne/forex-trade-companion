@@ -1,11 +1,8 @@
 
 import React from 'react';
-import { useDispatch } from 'react-redux';
-import moment from 'moment';
 import { STRATEGIES } from '../constants';
-import { JournalEntry, Strategy } from '../types'; // Ensure Strategy type is imported
+import { Strategy } from '../types'; // Ensure Strategy type is imported
 import { FaTimes, FaBookOpen, FaCheckSquare } from 'react-icons/fa';
-import { AppDispatch } from '../store';
 
 
 interface StrategyLibraryProps {
@@ -15,7 +12,6 @@ interface StrategyLibraryProps {
 }
 
 const StrategyLibraryComponent: React.FC<StrategyLibraryProps> = ({ visible, onClose, onApplyStrategy }) => {
-  const dispatch: AppDispatch = useDispatch();
 
   const handleApplyToJournal = (strategy: Strategy) => {
     onApplyStrategy(strategy); // Pass the full strategy object

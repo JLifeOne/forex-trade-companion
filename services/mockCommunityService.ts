@@ -2,7 +2,7 @@
 import { CommunityEntry, LeaderboardUser } from '../types';
 import moment from 'moment';
 
-let mockCommunityEntries: CommunityEntry[] = [
+const mockCommunityEntries: CommunityEntry[] = [
   {
     id: 'c1',
     username: 'TraderPro',

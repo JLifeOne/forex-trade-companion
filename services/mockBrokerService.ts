@@ -1,7 +1,7 @@
 
 import { Trade } from '../types';
 
-let mockTrades: Trade[] = [
+const mockTrades: Trade[] = [
   { id: '1', symbol: 'EUR/USD', side: 'buy', size: 0.1, openPrice: 1.0850, closePrice: 1.0870, pnl: 20, openTime: new Date(Date.now() - 3600000 * 2).toISOString(), closeTime: new Date(Date.now() - 3600000).toISOString(), sl: 1.0830, tp: 1.0900 },
   { id: '2', symbol: 'GBP/JPY', side: 'sell', size: 0.05, openPrice: 190.50, closePrice: 190.00, pnl: 25, openTime: new Date(Date.now() - 3600000 * 5).toISOString(), closeTime: new Date(Date.now() - 3600000 * 3).toISOString(), sl: 191.00, tp: 189.50 },
 ];

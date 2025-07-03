@@ -67,6 +67,7 @@ interface DashboardRouteProps {
   onDateSelect: (date: string) => void;
   onPlanTrade: (signal: AISignal) => void;
   onLogSignalToJournal: (signal: AISignal) => void;
+  currentJournalEntryForDate?: JournalEntry;
 }
 
 const DashboardRouteComponent: React.FC<DashboardRouteProps> = React.memo(({
@@ -74,7 +75,8 @@ const DashboardRouteComponent: React.FC<DashboardRouteProps> = React.memo(({
   selectedStrategyForJournal,
   onDateSelect,
   onPlanTrade,
-  onLogSignalToJournal
+  onLogSignalToJournal,
+  currentJournalEntryForDate
 }) => {
   return (
     <div className="space-y-6">
@@ -93,6 +95,7 @@ const DashboardRouteComponent: React.FC<DashboardRouteProps> = React.memo(({
           <JournalPane
             selectedDateProp={journalPaneDate}
             selectedStrategyForJournal={selectedStrategyForJournal}
+            journalEntry={currentJournalEntryForDate}
             key={journalPaneDate + (selectedStrategyForJournal?.id || '')} 
           />
           <AISignals onPlanTrade={onPlanTrade} onLogSignalToJournal={onLogSignalToJournal} />
@@ -292,6 +295,7 @@ Indicators: ${signal.supportingIndicators || 'N/A'}
                   onDateSelect={handleDateSelectFromCalendar}
                   onPlanTrade={handlePlanTradeFromSignal}
                   onLogSignalToJournal={handleLogSignalToJournalCallback}
+                  currentJournalEntryForDate={currentJournalEntryForDate}
               />} />
               <Route path="/analytics" element={<AnalyticsPanel />} />
               <Route
@@ -300,7 +304,8 @@ Indicators: ${signal.supportingIndicators || 'N/A'}
                   <JournalPane
                     key={journalPaneDate + (selectedStrategyObjectForJournal?.id || '')} 
                     selectedDateProp={journalPaneDate}
-                    selectedStrategyForJournal={selectedStrategyObjectForJournal} 
+                    selectedStrategyForJournal={selectedStrategyObjectForJournal}
+                    journalEntry={currentJournalEntryForDate} 
                   />
                 }
               />

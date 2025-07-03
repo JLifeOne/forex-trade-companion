@@ -2,11 +2,11 @@
 // Your backend service (e.g., Firebase Functions) would handle the actual Gemini API calls
 // using an API key configured securely on the server environment.
 
-import { ChatMessage, EmotionTag, AISignal, StrategyIdea, MarketCommentary, NewsEvent, WatchlistItem } from '../types';
+import { ChatMessage, EmotionTag, AISignal, StrategyIdea, MarketCommentary, WatchlistItem } from '../types';
 // GEMINI_TEXT_MODEL is still useful if the backend needs to know which model to use,
 // or if different endpoints on the backend map to different models.
 // For now, we assume the backend endpoints are pre-configured for the correct model.
-// import { GEMINI_TEXT_MODEL } from '../constants'; 
+ 
 import { fetchForexFactoryNews } from './forexFactoryService';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween.js';
@@ -18,10 +18,10 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 // Base URL for your backend proxy. Replace with your actual backend URL.
-const PROXY_BASE_URL = '/api/gemini'; // Example: Could be https://your-backend.com/api/gemini
+const PROXY_BASE_URL = '/api';
 
 // Utility to handle responses from the backend proxy
-async function fetchFromProxy<T>(endpoint: string, body: any, method: string = 'POST'): Promise<T> {
+async function fetchFromProxy<T>(endpoint: string, body: Record<string, unknown>, method: string = 'POST'): Promise<T> {
   const response = await fetch(`${PROXY_BASE_URL}${endpoint}`, {
     method: method,
     headers: {
@@ -88,9 +88,9 @@ export const queryChatAssistant = async (userMessage: string, history: ChatMessa
   try {
     const response = await fetchFromProxy<{ responseText: string }>('/chat', { userMessage, history });
     return response.responseText;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Proxy API error during chat query:', error);
-    if (error.message && error.message.includes('429')) { // Assuming proxy might relay 429
+    if ((error as Error).message && (error as Error).message.includes('429')) { // Assuming proxy might relay 429
       return 'Sorry, the assistant is experiencing high demand. Please try again in a few moments.';
     }
     return 'Sorry, I encountered an error while processing your request via the AI proxy. Please try again.';
@@ -216,9 +216,9 @@ export const getAIJournalReview = async (journalEntries: { [date: string]: impor
     try {
         const response = await fetchFromProxy<{ reviewText: string }>('/journal-review', { entriesText, periodDescription });
         return response.reviewText.trim() || "AI proxy could not generate a review at this time.";
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Proxy API error during journal review:', error);
-        if (error.message && error.message.includes('429')) {
+        if ((error as Error).message && (error as Error).message.includes('429')) {
           return 'Journal review service (via proxy) is experiencing high demand. Please try again.';
         }
         return "Sorry, an error occurred while generating the journal review via the AI proxy.";

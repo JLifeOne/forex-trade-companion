@@ -15,7 +15,7 @@ const AIMarketPulse: React.FC = () => {
     try {
       const result = await getMarketCommentary();
       setCommentary(result);
-    } catch (e: any) {
+    } catch (e: unknown) {
       setError("Failed to fetch market pulse.");
       console.error("Market Pulse fetch error:", e);
     } finally {

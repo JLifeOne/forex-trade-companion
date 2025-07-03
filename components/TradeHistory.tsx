@@ -6,9 +6,8 @@ import moment from 'moment';
 import { FaHistory, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 
 interface TradeHistoryProps {
-  // Props if this were a modal, for standalone page it might not need these
-  // visible?: boolean;
-  // onClose?: () => void;
+  visible?: boolean;
+  onClose?: () => void;
 }
 
 const TradeHistoryComponent: React.FC<TradeHistoryProps> = () => {

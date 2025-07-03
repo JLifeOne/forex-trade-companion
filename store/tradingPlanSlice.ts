@@ -17,9 +17,9 @@ const tradingPlanSlice = createSlice({
       try {
         state.plan = getTradingPlan();
         state.status = 'succeeded';
-      } catch (e: any) {
+      } catch (e: unknown) {
         state.status = 'failed';
-        state.error = e.message || 'Failed to load trading plan';
+        state.error = (e as Error).message || 'Failed to load trading plan';
       }
     },
     updatePlan(state, action: PayloadAction<Partial<TradingPlan>>) {
@@ -29,9 +29,9 @@ const tradingPlanSlice = createSlice({
       try {
         savePlanToStorage(state.plan);
         state.status = 'succeeded'; // Reflect that the last operation was successful
-      } catch (e:any) {
+      } catch (e: unknown) {
           state.status = 'failed';
-          state.error = e.message || 'Failed to save trading plan update';
+          state.error = (e as Error).message || 'Failed to save trading plan update';
           // Potentially revert state.plan here if save fails critically, or handle with UI feedback
       }
     },
@@ -40,9 +40,9 @@ const tradingPlanSlice = createSlice({
         try {
             savePlanToStorage(state.plan);
             state.status = 'succeeded';
-        } catch (e: any) {
+        } catch (e: unknown) {
             state.status = 'failed';
-            state.error = e.message || 'Failed to save trading plan';
+            state.error = (e as Error).message || 'Failed to save trading plan';
         }
     }
     // No separate updateField, as updatePlan with Partial<TradingPlan> handles it.

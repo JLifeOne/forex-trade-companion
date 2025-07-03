@@ -52,8 +52,8 @@ const OrderModalComponent: React.FC<OrderModalProps> = ({ visible, onClose, init
       });
       dispatch(addToast({ message: `Mock order placed successfully for ${symbol}!`, type: 'success' }));
       onClose();
-    } catch (error: any) {
-      dispatch(addToast({ message: `Order placement failed: ${error.message}`, type: 'error' }));
+    } catch (error: unknown) {
+      dispatch(addToast({ message: `Order placement failed: ${(error as Error).message}`, type: 'error' }));
     } finally {
       setIsSubmitting(false);
     }

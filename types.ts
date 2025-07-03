@@ -104,6 +104,7 @@ export interface CommunityEntry {
   pnl?: number;
   likes: number;
   comments?: CommunityComment[];
+  likedByUser?: boolean;
 }
 
 export interface CommunityComment {

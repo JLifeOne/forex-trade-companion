@@ -1,0 +1,48 @@
+type User @table {
+  createdAt: Timestamp!
+  displayName: String!
+  email: String
+  preferredCurrency: String
+}
+
+type Account @table {
+  user: User!
+  name: String!
+  initialBalance: Float!
+  currency: String!
+  broker: String
+}
+
+type CurrencyPair @table {
+  baseCurrency: String!
+  quoteCurrency: String!
+  description: String
+}
+
+type Trade @table {
+  user: User!
+  account: Account!
+  currencyPair: CurrencyPair!
+  type: String!
+  openDateTime: Timestamp!
+  lotSize: Float!
+  entryPrice: Float!
+  closeDateTime: Timestamp
+  exitPrice: Float
+  stopLoss: Float
+  takeProfit: Float
+}
+
+type BalanceHistory @table {
+  account: Account!
+  dateTime: Timestamp!
+  balance: Float!
+}
+
+type Alert @table {
+  user: User!
+  currencyPair: CurrencyPair!
+  alertPrice: Float!
+  direction: String!
+  notes: String
+}

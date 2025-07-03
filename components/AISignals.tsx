@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { AISignal, NewsEvent } from '../types';
 import { getAISignalRecommendations } from '../services/geminiService';
-import { getMockVolatilityTrends, VolatilityTrend, VolatilityTrendPoint } from '../utils/mockData'; // Updated import
+import { getMockVolatilityTrends, VolatilityTrend } from '../utils/mockData'; // Updated import
 import { fetchForexFactoryNews } from '../services/forexFactoryService';
 import dayjs from 'dayjs';
 // Import dayjs plugins
@@ -58,8 +58,8 @@ const AISignalsComponent: React.FC<AISignalsComponentProps> = ({ onPlanTrade, on
       const marketContext = "Currently observing general market conditions. User is interested in short to medium term opportunities across major pairs. Highlight any developing patterns or S/R interactions.";
       const recommendations = await getAISignalRecommendations(marketContext);
       setSignals(recommendations);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch AI signals.");
+    } catch (err: unknown) {
+      setError((err as Error).message || "Failed to fetch AI signals.");
       setSignals([]);
     } finally {
       setIsLoadingSignals(false);
@@ -84,7 +84,7 @@ const AISignalsComponent: React.FC<AISignalsComponentProps> = ({ onPlanTrade, on
     return <span className="text-blue-400" title="Low Volatility"><FaSnowflake /></span>;
   };
   
-  const CustomVolatilityTooltip = ({ active, payload, label }: any) => {
+  const CustomVolatilityTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number, stroke: string }[]; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-gray-600 p-2 border border-gray-500 rounded shadow-lg text-xs">

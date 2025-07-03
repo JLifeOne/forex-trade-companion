@@ -47,6 +47,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({ onShowAuth, onShowStrategyLi
     { name: 'News', icon: <FaNewspaper />, path: '/news' },
     { name: 'Community', icon: <FaUsers />, path: '/community' },
     { name: 'Leaderboard', icon: <FaTrophy />, path: '/leaderboard' },
+    { name: 'Profile', icon: <FaUser />, path: '/profile' },
   ];
 
   const bottomItems: MenuItem[] = [

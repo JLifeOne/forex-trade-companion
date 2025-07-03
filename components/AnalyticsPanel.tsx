@@ -31,12 +31,12 @@ const AnalyticsPanelComponent: React.FC = () => {
   }, [journalEntries]);
 
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { name: string; value: string | number; color?: string; fill?: string }[]; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-gray-700 p-2 border border-gray-600 rounded shadow-lg text-sm">
           <p className="label text-indigo-300">{`${label}`}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: { name: string; value: string | number; color?: string; fill?: string }, index: number) => (
              <p key={`item-${index}`} style={{ color: entry.color || entry.fill }}>
                 {`${entry.name}: ${typeof entry.value === 'number' ? entry.value.toFixed(entry.name === 'Win Rate' || entry.name === 'winRate' ? 1 : 2) : entry.value}${entry.name === 'Win Rate' || entry.name === 'winRate' ? '%' : ''}`}
              </p>

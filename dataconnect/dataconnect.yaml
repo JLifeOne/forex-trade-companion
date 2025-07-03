@@ -1,0 +1,12 @@
+specVersion: "v1"
+serviceId: "Forex Trade Companion"
+location: "us-central1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "ftcdb"
+      cloudSql:
+        instanceId: "forex trade companion-fdc"
+      # schemaValidation: "COMPATIBLE"
+connectorDirs: ["./connector"]

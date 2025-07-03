@@ -1,25 +1,26 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import { RootState } from '../store/rootReducer';
 import { AppDispatch } from '../store';
 import { saveJournalEntryToFirestore, prepareAISignalLog, deleteJournalEntryFromFirestore } from '../store/journalSlice';
 import { addToast } from '../store/toastSlice';
-import { JournalEntry, EmotionTag, Trade, JournalSaveLogEntry, Strategy, User, AISignal } from '../types';
+import { JournalEntry, EmotionTag, Trade, Strategy, AISignal } from '../types';
 import { STRATEGIES as predefinedStrategiesConstant } from '../constants'; 
 import { analyzeSentiment } from '../services/geminiService';
-import { FaSave, FaCalendarDay, FaBrain, FaLightbulb, FaTags, FaPlusCircle, FaTrash, FaHistory, FaCloudUploadAlt, FaCloudDownloadAlt } from 'react-icons/fa';
+import { FaCalendarDay, FaBrain, FaLightbulb, FaTags, FaPlusCircle, FaTrash, FaHistory, FaCloudUploadAlt } from 'react-icons/fa';
 
 interface JournalPaneProps {
   selectedDateProp?: string; 
   selectedStrategyForJournal?: Strategy; 
+  journalEntry?: JournalEntry;
 }
 
-const JournalPaneComponent: React.FC<JournalPaneProps> = ({ selectedDateProp, selectedStrategyForJournal }) => {
+const JournalPaneComponent: React.FC<JournalPaneProps> = ({ selectedDateProp, selectedStrategyForJournal, journalEntry: entryData }) => {
   const [selectedDate, setSelectedDate] = useState(selectedDateProp || moment().format('YYYY-MM-DD'));
   
-  // useSelector to get the specific entry for the selectedDate
-  const entryData = useSelector((state: RootState) => state.journal.entries[selectedDate]);
+  // The journal entry is now passed as a prop.
+  // const entryData = useSelector((state: RootState) => state.journal.entries[selectedDate]);
   const saveLog = useSelector((state: RootState) => state.journal.saveLog);
   const authUser = useSelector((state: RootState) => state.auth.user);
 
@@ -86,8 +87,8 @@ const JournalPaneComponent: React.FC<JournalPaneProps> = ({ selectedDateProp, se
       const tag = await analyzeSentiment(combinedText);
       setEmotionTag(tag);
       dispatch(addToast({ message: 'Sentiment analysis complete.', type: 'success' }));
-    } catch (e) {
-      console.error('Sentiment API error:', e);
+    } catch (error) {
+      console.error('Sentiment API error:', error);
       setEmotionTag('Unknown');
       dispatch(addToast({ message: 'Sentiment analysis failed.', type: 'error' }));
     } finally {
@@ -111,7 +112,7 @@ const JournalPaneComponent: React.FC<JournalPaneProps> = ({ selectedDateProp, se
     try {
         await dispatch(saveJournalEntryToFirestore({ date: selectedDate, data: journalEntryData })).unwrap();
         // Toast for success is handled in the thunk or slice now
-    } catch (error: any) {
+    } catch {
         // Toast for error is handled in the thunk or slice now
         // If specific UI update is needed on error here, add it.
     } finally {
@@ -134,7 +135,7 @@ const JournalPaneComponent: React.FC<JournalPaneProps> = ({ selectedDateProp, se
               setStrategyTemplate('');
               setTrades([]);
               setEmotionTag(undefined);
-          } catch (error) {
+          } catch {
               // Error toast handled in thunk
           } finally {
               setIsSaving(false);
@@ -315,6 +316,13 @@ const JournalPaneComponent: React.FC<JournalPaneProps> = ({ selectedDateProp, se
             )}
           </div>
           <div className="flex gap-2">
+            <button
+                onClick={() => handleLogAISignal({id: 'test', title: 'test', description: 'test'})}
+                disabled={isSaving || !authUser}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition-colors duration-150 flex items-center disabled:opacity-50"
+            >
+                <span className="mr-2"><FaLightbulb /></span> Log AI Signal
+            </button>
             {entryData && authUser && ( // Show delete button only if there's an entry and user is logged in
                  <button
                     onClick={handleDeleteEntry}

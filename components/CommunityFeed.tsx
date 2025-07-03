@@ -77,7 +77,7 @@ const CommunityFeedComponent: React.FC = () => {
               <div className="flex items-center space-x-6 pt-2 border-t border-gray-600">
                 <button
                   onClick={() => handleLike(entry.id)}
-                  className={`flex items-center space-x-1 text-sm transition-colors ${(entry as any).likedByUser ? 'text-indigo-400 hover:text-indigo-300' : 'text-gray-400 hover:text-indigo-400'}`}
+                  className={`flex items-center space-x-1 text-sm transition-colors ${entry.likedByUser ? 'text-indigo-400 hover:text-indigo-300' : 'text-gray-400 hover:text-indigo-400'}`}
                   aria-label="Like post"
                 >
                   <FaThumbsUp />
