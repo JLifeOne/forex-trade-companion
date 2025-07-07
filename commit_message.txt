@@ -1,0 +1,12 @@
+\"feat(functions): implement advanced sentiment analysis\"  
+  
+\"- Replaces the simple sentiment function with a new, more powerful\"  
+\"  Callable Function named 'analyzeSentimentAndSave'.\"  
+\"- The new function accepts structured journal and trade data for a\"  
+\"  more in-depth and accurate AI analysis.\"  
+\"- Saves the AI's analysis to the user's Firestore database, enabling\"  
+\"  historical sentiment tracking.\"  
+\"- Upgrades the function to be a secure, authenticated Callable\"  
+\"  Function, improving security and simplifying frontend integration.\"  
+\"- Adds .env, prompt.txt, PRD.txt, and Gemini.log to .gitignore to\"  
+\"  keep development notes and environment variables out of the repository.\" 

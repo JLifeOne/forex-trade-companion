@@ -1,0 +1,124 @@
+
+# Product Requirements Document: Forex Trade Companion
+**Version:** 2.0
+**Date:** October 27, 2023
+
+---
+
+### 1. Introduction & Vision
+
+#### 1.1. Product Overview
+The Forex Trade Companion is a comprehensive, AI-enhanced web application designed to be the ultimate, all-in-one dashboard for modern Forex traders. It centralizes all critical aspects of the trading workflow—from market analysis and charting to execution, in-depth journaling, performance analytics, and account management.
+
+#### 1.2. Vision Statement
+To empower Forex traders of all levels with a sophisticated, data-driven, and AI-powered platform that fosters discipline, provides actionable insights through advanced tools, and helps them make more informed trading decisions to improve their long-term profitability and consistency.
+
+#### 1.3. Problem Statement
+Forex trading is complex, dis-jointed, and emotionally taxing. Traders struggle with:
+*   **Tool Sprawl:** Juggling separate platforms for charting, news, journaling, and analytics, leading to inefficiency and missed opportunities.
+*   **Lack of Discipline:** Deviating from trading plans due to emotional decision-making.
+*   **Analysis Paralysis:** Difficulty in identifying high-probability setups and filtering market noise.
+*   **Performance Blindness:** Inability to effectively analyze past trades to identify recurring patterns, strengths, and weaknesses.
+*   **Tedious Record-Keeping:** Manual journaling is time-consuming and prone to errors, often leading to abandonment.
+
+The Forex Trade Companion solves these problems by providing a single, integrated, and intelligent workspace.
+
+---
+
+### 2. User Flow & Monetization Strategy
+
+The application will employ a freemium model designed to provide significant value at the free level to build user trust and engagement, while creating a compelling, non-intrusive upgrade path.
+
+#### 2.1. Initial User Journey
+1.  **Visitor:** A new, unauthenticated user can browse the application's interface in a read-only or limited state. They can see the layout, view mock data, and understand the potential features.
+2.  **Account Creation:** To use any interactive features (journaling, checklist, watchlist), the user must create a free account (email/password).
+3.  **Plan Selection:** Upon first login, the user is presented with the subscription tiers (Free, Starter, Pro). The "Free" plan is pre-selected, allowing them to proceed without payment, or they can choose to upgrade immediately.
+
+#### 2.2. Subscription Tiers
+*   **Free (The Apprentice):** Focused on building core habits. Provides essential tools for journaling and basic market awareness.
+*   **Starter (The Trader):** For the dedicated trader looking to improve performance with deeper data analysis and more powerful AI assistance.
+*   **Pro (The Master):** For the serious trader who requires professional-grade tools for peak efficiency, advanced analysis, and workflow automation.
+*   **Expert (The Quant):** For power users and small teams who need API access for custom integrations and programmatic trading.
+
+#### 2.3. Account Management
+A dedicated "Account Settings" section will allow authenticated users to:
+*   **Update Profile:** Change their name, email, or password.
+*   **Manage Subscription:**
+    *   View current plan, billing cycle, and next payment date.
+    *   **Upgrade Plan:** Select a higher tier. The upgrade takes effect immediately upon successful payment, prorating the cost if applicable.
+    *   **Downgrade Plan:** Select a lower tier. The user retains access to their current plan's features until the end of the paid billing cycle, after which the new, lower-tier plan becomes active.
+    *   **Cancel Subscription:** The cancellation takes effect at the end of the current billing cycle. The user retains access to their paid features until that date.
+*   **Update Billing Information:** Manage credit card details via an integrated, secure payment provider (e.g., Stripe, Braintree).
+
+---
+
+### 3. Core Features (Functional Requirements)
+
+#### 3.1. Live Interactive Charting Hub
+This becomes the centerpiece of the application, integrating analysis directly into the user's workflow.
+
+*   **Real-Time Charts:** Integration with a professional-grade charting library (e.g., TradingView Lightweight Charts).
+*   **Chart Types:** Support for various chart representations including:
+    *   Candlesticks
+    *   Heikin-Ashi
+    *   Line, Area, and Bar charts
+*   **Drawing Tools:** A comprehensive suite of drawing tools will be available:
+    *   Lines: Trend lines, horizontal/vertical lines, short/ray lines, arrows.
+    *   Shapes: Rectangles (boxes), ellipses.
+    *   Fibonacci Tools: Retracement, Extension.
+*   **Technical Indicators:** A library of over 45 essential and advanced indicators, including various Moving Averages, Oscillators (RSI, Stochastics, MACD), Volatility metrics (Bollinger Bands, ATR), Volume profiles, and more.
+*   **Trade Visualization (Starter+):** Automatically plot past trades from the journal directly onto the historical chart, showing entry, exit, SL, and TP levels.
+*   **AI Confluence Assistant (Pro):** An AI feature that analyzes the active indicators on a chart.
+    *   Suggests complementary indicator combinations for high-confluence signals.
+    *   Provides a weighted "confluence score" (e.g., 85%) based on how many indicators align with a bullish or bearish bias.
+    *   Explains what each indicator is signaling and how they work together.
+*   **Multi-Chart Layouts (Pro):** Allow users to create and save layouts with multiple charts (e.g., 2x2 grid showing different pairs or timeframes).
+
+#### 3.2. Automated & Manual Trading Journal
+*   **Manual Entry (All Tiers):** Full-featured manual journal with fields for mindset, strategy, and detailed trade logging.
+*   **Automated Broker Sync (Pro):** Secure, read-only integration with popular Forex brokers to automatically import trade history, eliminating manual data entry.
+
+#### 3.3. AI-Powered Features
+*   **AI Sentiment Analysis:** Analyze journal entries for emotional content.
+*   **AI Chat Assistant:** A conversational assistant for trading questions.
+*   **AI Strategy Spotlight:** Generate novel trading strategy ideas on demand.
+*   **AI Journal Review:** Provide summaries and actionable feedback on trading performance and psychology.
+    *   **Pattern Recognition (Pro):** Proactively identify patterns like "revenge trading" or "FOMO" based on journal text and trade data, offering targeted coaching advice.
+*   **AI Market Scanner (Pro):** A powerful tool to scan the market for user-defined trade setups (e.g., "Find all pairs on H1 where RSI is oversold and price is bouncing off the 50 EMA").
+
+#### 3.4. Backtesting & Forward Testing
+*   **Mock Backtester (Free):** A simplified backtester with simulated results.
+*   **Historical Backtester (Starter+):** A robust backtester using real historical data to validate strategies.
+*   **Paper Trading Module (Starter+):** A forward-testing environment to practice strategies in real-time without risking capital.
+
+---
+
+### 4. Tiered Subscription Model - Detailed Breakdown
+
+| Feature                       | Free (Apprentice)                                  | Starter (Trader)                                                               | Pro (Master)                                                                                                   | Expert (Quant)                   |
+| ----------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **User Account**              | ✅ Yes                                             | ✅ Yes                                                                         | ✅ Yes                                                                                                         | ✅ Yes                             |
+| **Journaling**                | ✅ Unlimited Manual Entries                        | ✅ Unlimited Manual Entries                                                    | ✅ **Automated Broker Sync**                                                                                   | ✅ All Pro Features              |
+| **Analytics**                 | Basic Dashboard (P&L, Win Rate)                    | Advanced Analytics (Equity Curve, Max Drawdown)                                | Deep Dive Analytics (vs. Time of Day, vs. Indicator)                                                           | ✅ All Pro Features              |
+| **Charting: Indicators**      | 5 indicators per chart                             | 25 indicators per chart                                                        | **>45 indicators** per chart                                                                                   | ✅ All Pro Features              |
+| **Charting: Features**        | ✅ All Drawing Tools, 1 Chart Layout             | ✅ **Trade Visualization**, 10 Saved Layouts                                   | ✅ **Multi-Chart Layouts**, ✅ **AI Confluence Assistant**, ✅ **Trade from Chart**, Unlimited Layouts       | ✅ All Pro Features              |
+| **AI: Chat Assistant**        | 10 queries / day                                   | 100 queries / day                                                              | **Unlimited**                                                                                                  | ✅ All Pro Features              |
+| **AI: Journal Review**        | ❌ No                                              | ✅ Weekly Review                                                               | ✅ **Unlimited & Proactive Psychological Insights**                                                              | ✅ All Pro Features              |
+| **AI: Strategy Ideas**        | 3 ideas / day                                      | 20 ideas / day                                                                 | **Unlimited**                                                                                                  | ✅ All Pro Features              |
+| **AI: Market Scanner**        | ❌ No                                              | ❌ No                                                                          | ✅ **Yes, Fully Configurable**                                                                                 | ✅ All Pro Features              |
+| **Backtesting**               | ✅ Mock Backtester                                 | ✅ **Historical Backtester** (20 runs/day)                                     | ✅ **Unlimited** Historical Runs                                                                               | ✅ All Pro Features              |
+| **Paper Trading**             | ❌ No                                              | ✅ Yes                                                                         | ✅ Yes                                                                                                         | ✅ All Pro Features              |
+| **Watchlist**                 | 5 Symbols                                          | 30 Symbols                                                                     | **Unlimited** Symbols                                                                                          | ✅ All Pro Features              |
+| **API Access**                | ❌ No                                              | ❌ No                                                                          | ❌ No                                                                                                        | ✅ **Yes, Full R/W API**         |
+| **Support**                   | Community Support                                  | Email Support                                                                  | Priority Email Support                                                                                         | **Dedicated Support Channel**    |
+| **Price (Example)**           | **$0/mo**                                          | **$19/mo**                                                                     | **$49/mo**                                                                                                     | **$99+/mo**                      |
+
+---
+
+### 5. Non-Functional Requirements
+
+*   **Performance:** The application, especially the charting hub, must be highly performant and responsive with minimal latency.
+*   **Security:** All user data, especially authentication tokens and broker credentials, must be encrypted and stored securely. Payment processing will be handled by a PCI-compliant third-party provider.
+*   **Scalability:** The backend architecture must be serverless and scalable to handle a growing user base and intensive AI processing tasks.
+*   **UI/UX:** A clean, modern, and intuitive dark-themed interface that is easy on the eyes and reduces cognitive load for traders during long sessions.
+*   **Reliability:** The application must have high uptime, with robust error handling and fallback mechanisms for external services (e.g., news feeds, AI API).

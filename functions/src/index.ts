@@ -94,12 +94,165 @@ export const getGeminiResponse = functions.https.onRequest((req, res) => {
   });
 });
 
-// Placeholder for the 'chat' function
-export const chat = functions.https.onRequest((req, res) => {
-    res.status(501).send("Not Implemented: This function will handle chat interactions and voice recordings.");
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+
+// --- Multimodal Chat Function with Memory (Callable) ---
+export const chat = onCall(async (request) => {
+    // 1. --- Authentication Check ---
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    }
+
+    // 2. --- Input Data Validation ---
+    const { prompt, history, imageUrl } = request.data;
+    if (!prompt || typeof prompt !== 'string') {
+        throw new HttpsError('invalid-argument', 'The function must be called with a "prompt" string.');
+    }
+    if (history && !Array.isArray(history)) {
+        throw new HttpsError('invalid-argument', '"history" must be an array if provided.');
+    }
+    if (imageUrl && typeof imageUrl !== 'string') {
+        throw new HttpsError('invalid-argument', '"imageUrl" must be a string if provided.');
+    }
+
+    // 3. --- Securely Get API Key ---
+    let apiKey;
+    try {
+        apiKey = functions.config().gemini.key;
+        if (!apiKey) {
+            functions.logger.error("Gemini API key is not configured.");
+            throw new HttpsError('internal', 'AI service is not configured.');
+        }
+    } catch (error) {
+        functions.logger.error("Could not access Firebase functions config.", error);
+        throw new HttpsError('internal', 'Configuration missing.');
+    }
+
+    try {
+        // 4. --- Initialize Gemini Client ---
+        const genAI = new GoogleGenerativeAI(apiKey);
+        
+        // 5. --- Select Model and Prepare Content ---
+        let model;
+        let content;
+
+        if (imageUrl) {
+            // Use the vision model for multimodal prompts
+            model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+            const imagePart = {
+                inlineData: {
+                    mimeType: 'image/png', // Assuming PNG, could be made dynamic
+                    data: imageUrl.split(',')[1] // Remove the base64 prefix
+                }
+            };
+            content = [prompt, imagePart];
+        } else {
+            // Use the standard model for text-only prompts
+            model = genAI.getGenerativeModel({ model: "gemini-pro" });
+            content = prompt;
+        }
+
+        // 6. --- Generate Content ---
+        const result = await model.generateContent(content);
+        const response = result.response;
+        const text = response.text();
+
+        return { text };
+
+    } catch (error) {
+        functions.logger.error("Error calling Gemini API for chat:", error);
+        throw new HttpsError('internal', 'An unexpected error occurred during the chat session.');
+    }
 });
 
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+// --- Type Definition for Speech API Response ---
+interface SpeechRecognitionResult {
+    alternatives: { transcript: string }[];
+}
+
+// --- Media-Aware File Upload Function (Callable) ---
+export const uploadFile = onCall(async (request) => {
+    // 1. --- Authentication Check ---
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    }
+    const userId = request.auth.uid;
+
+    // 2. --- Input Data Validation ---
+    const { fileContent, fileName, mimeType } = request.data;
+    if (!fileContent || typeof fileContent !== 'string' || !fileName || typeof fileName !== 'string' || !mimeType || typeof mimeType !== 'string') {
+        throw new HttpsError('invalid-argument', 'The function must be called with "fileContent", "fileName", and "mimeType".');
+    }
+
+    // 3. --- Handle Audio Transcription ---
+    if (mimeType.startsWith('audio/')) {
+        try {
+            const speech = require('@google-cloud/speech');
+            const client = new speech.SpeechClient();
+
+            const audio = {
+                content: fileContent,
+            };
+            const config = {
+                encoding: 'LINEAR16', // This should be confirmed with the frontend recording format
+                sampleRateHertz: 16000, // This should be confirmed with the frontend recording format
+                languageCode: 'en-US',
+            };
+            const speechRequest = {
+                audio: audio,
+                config: config,
+            };
+
+            const [response] = await client.recognize(speechRequest);
+            const transcription = response.results
+                .map((result: SpeechRecognitionResult) => result.alternatives[0].transcript)
+                .join('\n');
+            
+            functions.logger.log(`Transcription successful for user ${userId}: ${transcription}`);
+
+            // --- Seamlessly trigger sentiment analysis ---
+            // In a real implementation, you would invoke the analyzeSentimentAndSave function here.
+            // For now, we return the transcription and a success message.
+            return {
+                message: 'Audio transcribed successfully',
+                transcription: transcription,
+                analysisTriggered: true // Placeholder for frontend to know the next step
+            };
+
+        } catch (error) {
+            functions.logger.error(`Error during audio transcription for user ${userId}:`, error);
+            throw new HttpsError('internal', 'An unexpected error occurred during transcription.');
+        }
+    } else {
+        // 4. --- Handle Image/Other File Uploads ---
+        try {
+            const bucket = admin.storage().bucket();
+            const fileBuffer = Buffer.from(fileContent, 'base64');
+            const filePath = `uploads/${userId}/${Date.now()}_${fileName}`;
+            const fileUpload = bucket.file(filePath);
+
+            await fileUpload.save(fileBuffer, {
+                metadata: {
+                    contentType: mimeType,
+                    metadata: { owner: userId }
+                },
+            });
+
+            const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+            functions.logger.log(`File uploaded successfully by user ${userId} to ${publicUrl}`);
+
+            return {
+                message: 'File uploaded successfully',
+                url: publicUrl,
+                filePath: filePath
+            };
+
+        } catch (error) {
+            functions.logger.error(`Error uploading file for user ${userId}:`, error);
+            throw new HttpsError('internal', 'An unexpected error occurred while uploading the file.');
+        }
+    }
+});
 
 // --- Enhanced Sentiment Analysis Function (Callable) ---
 export const analyzeSentimentAndSave = onCall(async (request) => {

@@ -5,7 +5,13 @@ import pluginReact from "eslint-plugin-react";
 
 export default tseslint.config(
   {
-    ignores: ["functions/**", "dist/**", "my-vite-app/**"],
+    ignores: [
+      "dist/**",
+      "backend/functions/dist/**",
+      "backend/functions/lib/**",
+      "backend/functions/node_modules.old/**",
+      "my-vite-app/**"
+    ],
   },
   {
     files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],

@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "rootDir": "src",
     "module": "commonjs",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
@@ -9,10 +10,11 @@
     "target": "es2021",
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "baseUrl": "./src", // Allows imports relative to src
+    "baseUrl": "./src",
     "paths": {
-      "@/*": ["*"] // Example path alias if you want to use @/ for imports from src
+      "@/*": ["*"]
     }
   },
   "compileOnSave": true,
