@@ -1,506 +1,212 @@
 import * as functions from "firebase-functions";
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import * as admin from "firebase-admin";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import cors from "cors";
-import { Response } from "express";
-import axios from "axios";
 
-// Initialize CORS middleware.
-const corsHandler = cors({ origin: true });
+// Initialize Firebase Admin SDK
+admin.initializeApp();
 
-// Access your Gemini API Key from the environment configuration
-const GEMINI_API_KEY = functions.config().gemini?.key;
+// --- Enhanced CORS Configuration ---
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://forex-trade-companion.web.app'
+];
 
-if (!GEMINI_API_KEY) {
-  console.error(
-    "CRITICAL: Gemini API Key (gemini.key) is not configured in Firebase Functions environment. " +
-    "Run 'firebase functions:config:set gemini.key=\"YOUR_KEY\"' and redeploy."
-  );
-}
-
-// It's important to pass the apiKey in an object like {apiKey: GEMINI_API_KEY}
-// Passing GEMINI_API_KEY directly as a string will cause an error.
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-const GEMINI_TEXT_MODEL = "gemini-2.5-flash-preview-04-17";
-
-const handleApiError = (response: Response, error: unknown, functionName: string) => {
-  console.error(`Error in ${functionName}:`, error);
-  let errorMessage = "An unexpected error occurred with the AI service.";
-  let statusCode = 500;
-
-  // Check for Gemini-specific error structure or general HTTP status codes
-  const errorDetails = (error as Record<string, unknown>).error || error; // Gemini errors might be nested
-  const httpStatusCode = (errorDetails as Record<string, unknown>)?.httpStatusCode || (error as Record<string, unknown>).status || (error as Record<string, unknown>).code;
-
-  if ((errorDetails as Record<string, unknown>).message) {
-    errorMessage = (errorDetails as Record<string, unknown>).message as string;
-  }
-  
-  if (httpStatusCode === 429 || ((errorDetails as Record<string, unknown>).message && ((errorDetails as Record<string, unknown>).message as string).includes("429"))) {
-      errorMessage = "AI service is currently busy (rate limited). Please try again shortly.";
-      statusCode = 429;
-  } else if ((errorDetails as Record<string, unknown>).message && ((errorDetails as Record<string, unknown>).message as string).toLowerCase().includes("api key not valid")) {
-      errorMessage = "AI service authentication failed. This is likely a server-side configuration issue.";
-      statusCode = 503; // Service Unavailable due to config
-  } else if (statusCode === 500 && (errorDetails as Record<string, unknown>).message) {
-    errorMessage = `AI Service Error: ${(errorDetails as Record<string, unknown>).message}`;
-  }
-
-
-  response.status(statusCode).send({ message: errorMessage, errorDetails: error.toString() });
-};
-
-const checkApiKeyAndMethod = (
-    req: functions.https.Request,
-    res: Response,
-    method: "POST" | "GET" = "POST"
-): boolean => {
-    if (method === "POST" && !GEMINI_API_KEY) { // Only check for Gemini key on AI-related POSTs
-        console.error("Gemini API Key is not configured. Function cannot proceed.");
-        res.status(503).send({ message: "AI service is not configured (API key missing). Please contact support." });
-        return false;
-    }
-    if (req.method !== method) {
-        res.status(405).send({ message: `Only ${method} requests are allowed.` });
-        return false;
-    }
-    return true;
-};
-
-// --- FOREX FACTORY NEWS PROXY ---
-const FF_CALENDAR_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json";
-let newsCache: { data: Record<string, unknown> | null, timestamp: number } = { data: null, timestamp: 0 };
-const NEWS_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-
-export const forexFactoryNews = functions.https.onRequest((request, response) => {
-    corsHandler(request, response, async () => {
-        if (!checkApiKeyAndMethod(request, response, "GET")) {
-            return;
+const corsMiddleware = cors({
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
         }
-
-        const now = Date.now();
-        if (newsCache.data && (now - newsCache.timestamp < NEWS_CACHE_DURATION_MS)) {
-            console.log("Returning cached news data.");
-            response.status(200).send(newsCache.data);
-            return;
-        }
-
-        try {
-            console.log(`Proxying request to Forex Factory: ${FF_CALENDAR_URL}`);
-            const ffResponse = await axios.get(FF_CALENDAR_URL, {
-                headers: { "User-Agent": "ForexTradingCompanion-Proxy/1.0 (axios)" },
-                timeout: 10000, // 10 seconds
-            });
-
-            newsCache = { data: ffResponse.data, timestamp: now };
-
-            // Forward the data from Forex Factory
-            response.status(200).send(ffResponse.data);
-        } catch (error: unknown) {
-            console.error("Error fetching from Forex Factory:", (error as Error).message);
-            if (axios.isAxiosError(error) && error.response) {
-                // Forward the status and data from the error response if available
-                response.status(error.response.status).send(error.response.data);
-            } else {
-                // General server error
-                response.status(500).send({ message: "Failed to fetch news from the external provider." });
-            }
-        }
-    });
+    },
 });
 
+// --- Main Cloud Function ---
+export const getGeminiResponse = functions.https.onRequest((req, res) => {
+  // Apply CORS middleware
+  corsMiddleware(req, res, async () => {
+    // --- Basic Request Validation ---
+    if (req.method !== "POST") {
+      functions.logger.warn("Method Not Allowed:", req.method);
+      return res.status(405).send({ error: "Method Not Allowed" });
+    }
 
-// --- SENTIMENT ANALYSIS ---
-export const sentiment = functions.https.onRequest((request: functions.https.Request, response: Response) => {
-  corsHandler(request, response, () => {
-    if (!checkApiKeyAndMethod(request, response, "POST")) return;
-    
-    (async () => {
-      try {
-        const { journalText } = request.body;
-        if (!journalText) {
-          response.status(400).send({ message: "Missing 'journalText' in request body." });
-          return;
+    const { prompt } = req.body;
+    if (!prompt || typeof prompt !== 'string') {
+      functions.logger.error("Bad Request: Prompt is missing or not a string.");
+      return res.status(400).send({ error: "Bad Request: 'prompt' is required and must be a string." });
+    }
+
+    // --- Securely Get API Key ---
+    let apiKey;
+    try {
+        apiKey = functions.config().gemini.key;
+        if (!apiKey) {
+            functions.logger.error("Gemini API key is not configured. Set it with 'firebase functions:config:set gemini.key=YOUR_API_KEY'");
+            return res.status(500).send({ error: "Internal Server Error: AI service is not configured." });
         }
-
-        const prompt = `Analyze the sentiment of the following journal entry: \"${journalText}\". Classify it strictly as one of: 'Low Emotion', 'Neutral Emotion', or 'High Emotion'. Return only the classification string.`;
-        
-        const genAIResponse: GenerateContentResponse = await ai.models.generateContent({
-          model: GEMINI_TEXT_MODEL,
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          config: { temperature: 0.2, topK:10 }
-        });
-        
-        const textResponse = (genAIResponse.text ?? "").trim();
-        let emotionTag: 'Low Emotion' | 'Neutral Emotion' | 'High Emotion' | 'Unknown' = 'Unknown';
-
-        if (textResponse.includes('Low Emotion')) emotionTag = 'Low Emotion';
-        else if (textResponse.includes('Neutral Emotion')) emotionTag = 'Neutral Emotion';
-        else if (textResponse.includes('High Emotion')) emotionTag = 'High Emotion';
-        
-        console.log(`Sentiment analysis raw response: \"${textResponse}\", Tag: \"${emotionTag}\"`);
-        response.status(200).send({ emotionTag });
-        return;
-      } catch (error) {
-        handleApiError(response, error, "sentiment function");
-        return;
-      }
-    })();
-  });
-});
-
-// --- CHAT ASSISTANT ---
-export const chat = functions.https.onRequest((request: functions.https.Request, response: Response) => {
-  corsHandler(request, response, async () => {
-    if (!checkApiKeyAndMethod(request, response, "POST")) {
-      return;
+    } catch (error) {
+        functions.logger.error("Could not access Firebase functions config. Ensure you are in an initialized Firebase project.", error);
+        return res.status(500).send({ error: "Internal Server Error: Configuration missing." });
     }
 
     try {
-      const { userMessage, history } = request.body;
-      if (!userMessage) {
-        response.status(400).send({ message: "Missing 'userMessage' in request body." });
-        return;
-      }
-
-      const contents = [];
-      if (history && Array.isArray(history)) {
-        history.forEach((msg: { role: 'user' | 'assistant'; text: string }) => {
-          contents.push({
-            role: msg.role === 'assistant' ? 'model' : 'user', // Ensure correct role mapping
-            parts: [{ text: msg.text }],
-          });
-        });
-      }
-      contents.push({ role: "user", parts: [{ text: userMessage }] });
-      
-      const genAIResponse: GenerateContentResponse = await ai.models.generateContent({
-        model: GEMINI_TEXT_MODEL,
-        contents: contents,
-        config: { temperature: 0.7 } // Suitable temperature for chat
+      // --- Initialize Gemini Client ---
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: "gemini-pro",
+        // --- Safety Settings (Resourceful Upgrade) ---
+        safetySettings: [
+            {
+                category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            },
+        ],
       });
 
-      const responseText = (genAIResponse.text ?? "").trim();
-      response.status(200).send({ responseText });
-      return;
+      // --- Generate Content ---
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const text = response.text();
+
+      return res.status(200).send({ text });
+
     } catch (error) {
-      handleApiError(response, error, "chat function");
-      return;
+      // --- Enhanced Error Logging ---
+      functions.logger.error("Error calling Gemini API:", error);
+      // Provide a generic error to the client for security
+      return res.status(500).send({ error: "Internal Server Error: Could not get response from AI service." });
     }
   });
 });
 
-interface Signal {
-  id: string;
-  title: string;
-  description: string;
-  pair: string;
-  confidence: "High" | "Medium" | "Low";
-  keyLevels?: string;
-  chartPattern?: string;
-  confirmationSignals?: string;
-  supportingIndicators?: string;
-}
-
-// --- AI SIGNAL RECOMMENDATIONS ---
-export const signals = functions.https.onRequest((request: functions.https.Request, response: Response) => {
-  corsHandler(request, response, async () => {
-    if (!checkApiKeyAndMethod(request, response, "POST")) return;
-
-    try {
-      const { marketContext } = request.body;
-      if (!marketContext) {
-        response.status(400).send({ message: "Missing 'marketContext'."});
-        return;
-      }
-
-      const prompt = `Given the market context: \"${marketContext}\", generate 3-5 potential forex trading signals. For each signal, provide:
-        - id (string, unique, e.g., "eurusd-long-timestamp")
-        - title (string, e.g., "EUR/USD Bullish Engulfing on H4")
-        - description (string, detailed reasoning)
-        - pair (string, e.g., "EUR/USD")
-        - confidence (string, "High", "Medium", or "Low")
-        - keyLevels (string, optional, e.g., "Support at 1.0800, Resistance at 1.0900")
-        - chartPattern (string, optional, e.g., "Bullish Engulfing, Double Bottom")
-        - confirmationSignals (string, optional, e.g., "RSI divergence, MACD crossover")
-        - supportingIndicators (string, optional, e.g., "MA alignment, Volume increase")
-        Return as a JSON object with a "signals" array: {"signals": [{"id": ..., "title": ...,}, ...]} `;
-
-      const genAIResponse: GenerateContentResponse = await ai.models.generateContent({
-        model: GEMINI_TEXT_MODEL,
-        contents: [{role: "user", parts: [{text: prompt}]}],
-        config: { responseMimeType: "application/json", temperature: 0.5 }
-      });
-      
-      let jsonStr = (genAIResponse.text ?? "").trim();
-      const fenceRegex = /^```(?:\w+)?\s*\n?([\s\S]*?)\n?```$/;
-      const match = jsonStr.match(fenceRegex);
-      if (match && match[2]) {
-        jsonStr = match[2].trim();
-      }
-
-      try {
-        const parsedData = JSON.parse(jsonStr);
-        if (parsedData && Array.isArray(parsedData.signals)) {
-            parsedData.signals = parsedData.signals.map((s: Partial<Signal>, i: number) => ({
-                ...s,
-                id: s.id || `sig-${(s.pair || 'unknown').replace(/[^a-zA-Z0-9]/g, "")}-${Date.now() + i}`
-            }));
-            response.status(200).send(parsedData);
-            return;
-        }
-        console.warn("Signals JSON from AI was not in expected format:", parsedData);
-        response.status(200).send({ signals: [] }); 
-        return;
-      } catch(error) {
-          console.error("Failed to parse signals JSON from AI:", error, "Raw Text:", jsonStr);
-          response.status(500).send({ message: "AI generated invalid signal data format.", details: jsonStr });
-          return;
-      }
-
-    } catch (error) {
-      handleApiError(response, error, "signals function");
-      return;
-    }
-  });
+// Placeholder for the 'chat' function
+export const chat = functions.https.onRequest((req, res) => {
+    res.status(501).send("Not Implemented: This function will handle chat interactions and voice recordings.");
 });
 
-// --- AI STRATEGY GENERATION ---
-export const strategyIdea = functions.https.onRequest((request: functions.https.Request, response: Response) => {
-  corsHandler(request, response, async () => {
-    if (!checkApiKeyAndMethod(request, response, "POST")) {
-      return;
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+
+// --- Enhanced Sentiment Analysis Function (Callable) ---
+export const analyzeSentimentAndSave = onCall(async (request) => {
+    // 1. --- Authentication Check ---
+    if (!request.auth) {
+        throw new HttpsError(
+            'unauthenticated',
+            'The function must be called while authenticated.'
+        );
+    }
+    const userId = request.auth.uid;
+
+    // 2. --- Input Data Validation ---
+    const { journalEntry, tradeData } = request.data;
+    if (!journalEntry || typeof journalEntry !== 'object' || !tradeData || typeof tradeData !== 'object') {
+        throw new HttpsError(
+            'invalid-argument',
+            'The function must be called with "journalEntry" and "tradeData" objects.'
+        );
     }
 
+    // 3. --- Securely Get API Key ---
+    let apiKey;
     try {
-      const { tradingStyle, newsContext } = request.body; 
-      if (!tradingStyle) return response.status(400).send({ message: "Missing 'tradingStyle'."});
-
-      const prompt = `Generate a forex trading strategy idea for a '${tradingStyle}' style.\n        News Context: \"${newsContext || 'No specific news provided, assume general market conditions.'}\"\n        Provide:\n        - strategyName (string)\n        - description (string, brief overview)\n        - entryConditions (string, clear rules)\n        - exitConditions (string, clear rules for SL and TP)\n        - coreLogic (string, the underlying rationale)\n        - recommendedPairs (string, comma-separated e.g., "EUR/USD, GBP/JPY")\n        - timeframes (string, e.g., "M15, H1, H4")\n        Return as a JSON object with a "strategyIdea" key: {"strategyIdea": {"strategyName": ..., etc.}}`;
-      
-      const genAIResponse: GenerateContentResponse = await ai.models.generateContent({
-        model: GEMINI_TEXT_MODEL,
-        contents: [{role: "user", parts: [{text: prompt}]}],
-        config: { responseMimeType: "application/json", temperature: 0.6 }
-      });
-
-      let jsonStr = (genAIResponse.text ?? "").trim();
-      const fenceRegex = /^`{3}(\w*)?\s*\n?([\s\S]*?)\n?\s*`{3}$/s;
-      const match = jsonStr.match(fenceRegex);
-      if (match && match[2]) {
-        jsonStr = match[2].trim();
-      }
-      
-      try {
-        const parsedData = JSON.parse(jsonStr);
-        if (parsedData && parsedData.strategyIdea && parsedData.strategyIdea.strategyName) {
-           parsedData.strategyIdea.id = `strat-${parsedData.strategyIdea.strategyName.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`;
+        apiKey = functions.config().gemini.key;
+        if (!apiKey) {
+            functions.logger.error("Gemini API key is not configured.");
+            throw new HttpsError('internal', 'AI service is not configured.');
         }
-        return response.status(200).send(parsedData);
-      } catch (e) {
-        console.error("Failed to parse strategy idea JSON from AI:", e, "Raw text:", jsonStr);
-        return response.status(500).send({ message: "AI generated invalid strategy data format.", details: jsonStr });
-      }
-
     } catch (error) {
-      handleApiError(response, error, "strategyIdea function");
-      return;
+        functions.logger.error("Could not access Firebase functions config.", error);
+        throw new HttpsError('internal', 'Configuration missing.');
     }
-  });
-});
-
-// --- AI MARKET COMMENTARY ---
-export const marketCommentary = functions.https.onRequest((request: functions.https.Request, response: Response) => {
-  corsHandler(request, response, async () => {
-    if (!checkApiKeyAndMethod(request, response, "POST")) return;
 
     try {
-      const { newsContext } = request.body;
+        // 4. --- Initialize Gemini Client ---
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-      const genAIResponse: GenerateContentResponse = await ai.models.generateContent({
-        model: GEMINI_TEXT_MODEL,
-        contents: [{
-          role: "user",
-          parts: [{
-            text: `Provide a brief (2-3 sentences) overall forex market commentary considering this news context: \"${newsContext || "General market conditions"}\". Focus on current sentiment, potential drivers, and major pair outlooks. Return as a JSON object: {"commentary": {"commentaryText": "Your commentary here"}}`
-          }]
-        }],
-        config: { responseMimeType: "application/json", temperature: 0.7 }
-      });
+        // 5. --- Advanced AI Prompt ---
+        const advancedPrompt = `
+            As a trading psychology expert, analyze the following structured journal entry and trade data.
+            The user is a forex trader. Your task is to provide deep, actionable insights.
 
-      let jsonStr = (genAIResponse.text ?? "").trim();
-      const fenceRegex = /^`{3}(\w*)?\s*\n?([\s\S]*?)\n?\s*`{3}$/s;
-      const match = jsonStr.match(fenceRegex);
-      if (match && match[2]) {
-        jsonStr = match[2].trim();
-      }
+            **Trade Data:**
+            - Instrument: ${tradeData.instrument || 'N/A'}
+            - P/L: ${tradeData.profit || 'N/A'}
+            - Strategy: ${tradeData.strategy || 'N/A'}
 
-      try {
-        const parsedData = JSON.parse(jsonStr);
-        if (parsedData && parsedData.commentary && parsedData.commentary.commentaryText) {
-          return response.status(200).send(parsedData);
-        }
-        console.warn("Market commentary from AI was not in expected format:", parsedData);
-        return response.status(200).send({ commentary: { commentaryText: "No specific commentary available at this moment." } });
+            **Structured Journal Entry:**
+            - Market Thesis: ${journalEntry.marketThesis || 'N/A'}
+            - Entry Reason: ${journalEntry.entryReason || 'N/A'}
+            - Exit Reason: ${journalEntry.exitReason || 'N/A'}
+            - Post-Trade Feelings: ${journalEntry.postTradeFeelings || 'N/A'}
 
-      } catch (e) {
-        console.error("Failed to parse market commentary JSON from AI:", e, "Raw text:", jsonStr);
-        return response.status(500).send({ message: "AI generated invalid commentary data format.", details: jsonStr });
-      }
-
-    } catch (error) {
-      handleApiError(response, error, "marketCommentary function");
-      return;
-    }
-  });
-});
-
-// --- AI JOURNAL REVIEW ---
-export const journalReview = functions.https.onRequest((request: functions.https.Request, response: Response) => {
-  corsHandler(request, response, async () => {
-    if (!checkApiKeyAndMethod(request, response, "POST")) return;
-
-    try {
-        const { entriesText, periodDescription } = request.body; 
-        if (!entriesText || !periodDescription) {
-          response.status(400).send({ message: "Missing 'entriesText' or 'periodDescription'."});
-          return;
-        }
-
-        const prompt = `Review the following forex trading journal entries for the period '${periodDescription}'. Provide constructive feedback on patterns, mindset, strategy application, and areas for improvement. Be concise and actionable. Entries:\n        \n        ${entriesText}\n        \n        Return as a JSON object: {"reviewText": "Your review here"}`;
-        
-        const genAIResponse: GenerateContentResponse = await ai.models.generateContent({
-            model: GEMINI_TEXT_MODEL,
-            contents: [{role: "user", parts: [{text: prompt}]}],
-            config: { responseMimeType: "application/json", temperature: 0.5 }
-        });
-        
-        let jsonStr = (genAIResponse.text ?? "").trim();
-        const fenceRegex = /^`{3}(\w*)?\s*\n?([\s\S]*?)\n?\s*`{3}$/s;
-        const match = jsonStr.match(fenceRegex);
-        if (match && match[2]) {
-            jsonStr = match[2].trim();
-        }
-        
-        interface Review { reviewText: string; }
-        try {
-            const parsedData: Review = JSON.parse(jsonStr);
-            if (parsedData && parsedData.reviewText) {
-                 response.status(200).send(parsedData);
-                 return;
+            **Analysis Task:**
+            Based on ALL the provided information, generate a JSON object with the following structure:
+            {
+              "sentimentSummary": "A brief, insightful summary of the trader's psychological state, linking their feelings to the trade outcome.",
+              "keyEmotions": ["List", "of", "identified", "emotions", "like", "Fear", "Greed", "Discipline"],
+              "confidenceScore": A number between 0.0 (no confidence) and 1.0 (high confidence),
+              "recommendations": [
+                "A specific, actionable recommendation based on the market thesis.",
+                "A specific, actionable recommendation based on the entry/exit reasons.",
+                "A specific, actionable recommendation based on the post-trade feelings and P/L."
+              ]
             }
-            console.warn("Journal review from AI was not in expected format:", parsedData);
-            response.status(200).send({ reviewText: "Could not generate a review at this time." });
-            return;
-        } catch (e) {
-            console.error("Failed to parse journal review JSON from AI:", e, "Raw text:", jsonStr);
-            response.status(500).send({ message: "AI generated invalid review data format.", details: jsonStr });
-            return;
-        }
+        `;
 
-    } catch (error) {
-      handleApiError(response, error, "journalReview function");
-      return;
-    }
-  });
-});
+        // 6. --- Generate Content ---
+        const result = await model.generateContent(advancedPrompt);
+        const response = result.response;
+        const responseText = response.text();
+        let analysisResult;
 
-// --- AI WATCHLIST SYMBOL SENTIMENT ---
-export const symbolSentiment = functions.https.onRequest((request: functions.https.Request, response: Response) => {
-  corsHandler(request, response, async () => {
-    if (!checkApiKeyAndMethod(request, response, "POST")) return;
-
-    try {
-        const { symbol } = request.body; 
-        if (!symbol) {
-            response.status(400).send({ message: "Missing 'symbol'."});
-            return;
-        }
-
-        const prompt = `What is the current market sentiment for the forex symbol ${symbol}? Consider recent price action, news, and general technical outlook. Classify strictly as 'Bullish', 'Bearish', or 'Neutral'. Return as a JSON object: {"sentiment": "Your classification"}`;
-        
-        const genAIResponse: GenerateContentResponse = await ai.models.generateContent({
-            model: GEMINI_TEXT_MODEL,
-            contents: [{role: "user", parts: [{text: prompt}]}],
-            config: { responseMimeType: "application/json", temperature: 0.3 }
-        });
-
-        let jsonStr = (genAIResponse.text ?? "").trim();
-        const fenceRegex = /^`{3}(\w*)?\s*\n?([\s\S]*?)\n?\s*`{3}$/s;
-        const match = jsonStr.match(fenceRegex);
-        if (match && match[2]) {
-            jsonStr = match[2].trim();
-        }
-
+        // 7. --- Parse Response ---
         try {
-            const parsedData = JSON.parse(jsonStr);
-            if (parsedData && parsedData.sentiment && ['Bullish', 'Bearish', 'Neutral'].includes(parsedData.sentiment)) {
-                response.status(200).send(parsedData);
-                return;
-            }
-            console.warn("Symbol sentiment from AI was not in expected format:", parsedData);
-            response.status(200).send({ sentiment: "N/A" });
-            return;
-        } catch (e) {
-            console.error("Failed to parse symbol sentiment JSON from AI:", e, "Raw text:", jsonStr);
-            response.status(500).send({ message: "AI generated invalid sentiment data format.", details: jsonStr });
-            return;
+            const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
+            const jsonString = jsonMatch ? jsonMatch[1] : responseText;
+            analysisResult = JSON.parse(jsonString);
+        } catch (parseError) {
+            functions.logger.error("Failed to parse JSON from Gemini:", parseError, "Raw response:", responseText);
+            throw new HttpsError('internal', 'Could not process AI response.');
         }
+
+        // 8. --- Save to Firestore ---
+        const db = admin.firestore();
+        const tradeId = tradeData.id || `trade_${Date.now()}`; // Use trade ID if provided, else generate one
+        const sentimentRecord = {
+            ...analysisResult,
+            tradeData, // Store the original trade data for context
+            journalEntry, // Store the original journal entry
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+
+        await db.collection('users').doc(userId).collection('sentimentHistory').doc(tradeId).set(sentimentRecord);
+
+        functions.logger.log(`Successfully analyzed and saved sentiment for user ${userId}, trade ${tradeId}`);
+
+        // 9. --- Return Result to Client ---
+        return sentimentRecord;
 
     } catch (error) {
-      handleApiError(response, error, "symbolSentiment function");
-      return;
+        functions.logger.error("Error during sentiment analysis and save:", error);
+        if (error instanceof HttpsError) {
+            throw error; // Re-throw HttpsError
+        }
+        throw new HttpsError('internal', 'An unexpected error occurred.');
     }
-  });
-});
-
-// --- AI-POWERED BACKTESTING ANALYSIS ---
-export const backtestAnalysis = functions.https.onRequest((request: functions.https.Request, response: Response) => {
-  corsHandler(request, response, async () => {
-    if (!checkApiKeyAndMethod(request, response, "POST")) return;
-
-    try {
-        const { backtestResults, strategyDescription }: { backtestResults: Record<string, unknown>, strategyDescription: string } = request.body;
-        if (!backtestResults || !strategyDescription) {
-            response.status(400).send({ message: "Missing 'backtestResults' or 'strategyDescription'." });
-            return;
-        }
-
-        // Convert backtestResults object to a string for the prompt
-        const resultsString = JSON.stringify(backtestResults, null, 2);
-
-        const prompt = `Analyze the following backtest results for the strategy: \"${strategyDescription}\". Provide a concise analysis of the performance, highlighting strengths, weaknesses, and potential areas for improvement. Backtest Results:\n\n${resultsString}\n\nReturn as a JSON object: {"analysisText": "Your analysis here"}`;
-
-        const genAIResponse: GenerateContentResponse = await ai.models.generateContent({
-            model: GEMINI_TEXT_MODEL,
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            config: { responseMimeType: "application/json", temperature: 0.5 }
-        });
-
-        let jsonStr = (genAIResponse.text ?? "").trim();
-        const fenceRegex = /^`{3}(\w*)?\s*\n?([\s\S]*?)\n?\s*`{3}$/s;
-        const match = jsonStr.match(fenceRegex);
-        if (match && match[2]) {
-            jsonStr = match[2].trim();
-        }
-
-        try {
-            const parsedData: { analysisText: string } = JSON.parse(jsonStr);
-            if (parsedData && parsedData.analysisText) {
-                response.status(200).send(parsedData);
-                return;
-            }
-            console.warn("Backtest analysis from AI was not in expected format:", parsedData);
-            response.status(200).send({ analysisText: "Could not generate an analysis at this time." });
-            return;
-        } catch (error) {
-            console.error("Failed to parse backtest analysis JSON from AI:", error, "Raw text:", jsonStr);
-            response.status(500).send({ message: "AI generated invalid analysis data format.", details: jsonStr });
-            return;
-        }
-
-    } catch (error) {
-        handleApiError(response, error, "backtestAnalysis function");
-        return;
-    }
-  });
 });

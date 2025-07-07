@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+dist/
+functions/lib/-e \"\n# Gemini CLI files\n.env\nprompt.txt\nPRD.txt\nGemini.log\" 
