@@ -1,5 +1,8 @@
 # forex-trade-companion — repository coding-agent instructions
 
+> **MANDATORY per-feature documentation and code-comment rule (2026-11-09):** Read `docs/FEATURE_ARCHITECTURE.md` before touching a feature. Document its purpose, independent owner/boundaries, exact inbound and outbound dependencies, UI/API/database/state integrations, security contracts, tests, known limitations and safe handoff. Comment public/non-obvious code interfaces (why, contract, units, side effects and errors). Update impacted feature entries and downstream dependents **in the same PR**; missing/stale feature docs block merge. Never claim code is takeover-ready without a source audit. This supplements `docs/DEVELOPMENT_WORKFLOW.md`.
+
+
 **Mandatory owner directive, November 9, 2026.** Read `docs/DEVELOPMENT_WORKFLOW.md` before any code change. This file and the project-specific source, diagrams, security/UX rules, open PRs, official docs and verified release state are required context.
 
 1. Start from a verified working `main` (or explicitly stated stacked PR dependency). Never replace working app features with disconnected mock screens or a fresh rebuild.
